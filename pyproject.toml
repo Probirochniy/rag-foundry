@@ -33,13 +33,13 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = [
-    "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings
-    "F",   # pyflakes
-    "I",   # isort (импорты по полочкам)
-    "B",   # bugbear (потенциальные баги)
-    "UP",  # pyupgrade (заставляет писать на современном питоне 3.12)
-    "RUF", # специфичные правила ruff
+    "E",
+    "W",
+    "F",
+    "I",
+    "B",
+    "UP",
+    "RUF",
 ]
 ignore = []
 
