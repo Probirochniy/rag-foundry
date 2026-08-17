@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  lint:
+  lint-and-typecheck:
     name: Lint
     runs-on: ubuntu-latest
 
