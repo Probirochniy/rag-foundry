@@ -41,11 +41,10 @@ jobs:
       - name: Mypy Strict Type Check
         run: uv run mypy src
 
-  test:
+  unit-tests:
     name: Unit Tests
     needs: [lint-and-typecheck]
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -64,5 +63,30 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked --all-extras --dev
 
-      - name: Run Pytest
+      - name: Run Unit Tests
         run: uv run pytest tests/unit
+
+  integration-tests:
+    name: Integration Tests
+    needs: [unit-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          version: "latest"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+
+      - name: Install dependencies
+        run: uv sync --locked --all-extras --dev
+
+      - name: Run Integration Tests
+        run: uv run pytest tests/integration
