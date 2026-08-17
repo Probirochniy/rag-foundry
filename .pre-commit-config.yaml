@@ -8,11 +8,6 @@ repos:
       - id: check-toml
       - id: check-added-large-files
 
-  - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.4.0
-    hooks:
-      - id: uv-lock
-
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.6.0
     hooks:
@@ -22,6 +17,13 @@ repos:
 
   - repo: local
     hooks:
+      - id: uv-lock-check
+        name: uv lock check
+        entry: uv lock --check
+        language: system
+        files: ^(pyproject\.toml|uv\.lock)$
+        pass_filenames: false
+
       - id: mypy
         name: mypy strict check
         entry: uv run mypy src
