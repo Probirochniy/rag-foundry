@@ -6,7 +6,7 @@ from src.infrastructure.cache.redis_repository import RedisCacheRepository
 
 
 @pytest.mark.asyncio
-async def test_redis_cache_set_and_get() -> None:
+async def test_redis_cache() -> None:
     repo = RedisCacheRepository(redis_url=settings.redis_url)
 
     is_healthy = await repo.is_healthy()

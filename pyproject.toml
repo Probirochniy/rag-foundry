@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.141.1",
+    "fastembed>=0.8.0",
     "pydantic>=2.0",
     "pydantic-settings>=2.15.0",
     "qdrant-client>=1.19.0",
@@ -46,6 +47,7 @@ ignore_missing_imports = true
 warn_unused_ignores = true
 warn_redundant_casts = true
 warn_unused_configs = true
+exclude = ["tests/"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
