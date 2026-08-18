@@ -2,38 +2,47 @@ import pytest
 
 from src.core.config import settings
 from src.core.entities.rag import DocumentChunk
+from src.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
 from src.infrastructure.vector_store.qdrant_repository import QdrantRepository
 
 
 @pytest.mark.asyncio
-async def test_qdrant_repository_upsert_and_search() -> None:
+async def test_qdrant_repository() -> None:
+    embeddings = FastEmbedAdapter()
     repo = QdrantRepository(
         url=settings.qdrant_url,
-        collection_name="test_integration_collection",
-        vector_size=settings.embedding_dimension,
+        collection_name="test_semantic_collection",
+        embeddings=embeddings,
+        vector_size=384,
     )
 
-    assert await repo.is_healthy() is True
+    is_healthy = await repo.is_healthy()
+    assert is_healthy is True
 
     chunks = [
         DocumentChunk(
-            id="chunk-1",
-            content="Kubernetes управляет подами и нодами",
-            metadata={"source_id": "k8s_guide.pdf"},
+            id="doc-k8s",
+            content="Kubernetes (also known as K8s) is an open-source system."
+            "It automates how you run, update, and scale computer programs"
+            "across many servers.",
+            metadata={"source_id": "k8s.md"},
         ),
         DocumentChunk(
-            id="chunk-2",
-            content="FastAPI это современный асинхронный фреймворк для Python",
-            metadata={"source_id": "fastapi_guide.pdf"},
+            id="doc-food",
+            content="god i love pizza.",
+            metadata={"source_id": "pizza.md"},
         ),
     ]
 
     await repo.upsert(chunks)
 
-    results = await repo.search(query="Kubernetes управляет подами и нодами", top_k=1)
+    # Same meaning, different wording
+    results = await repo.search(
+        query="How to manage docker containers in production clusters?", top_k=1
+    )
 
     assert len(results) == 1
-    assert results[0].source_id == "k8s_guide.pdf"
-    assert "Kubernetes" in results[0].content
+    assert results[0].source_id == "k8s.md"
+    assert results[0].score > 0.5
 
     await repo.close()

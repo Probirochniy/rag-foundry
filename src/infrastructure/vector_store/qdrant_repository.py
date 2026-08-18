@@ -6,6 +6,7 @@ from typing import Any
 from qdrant_client import AsyncQdrantClient, models
 
 from src.core.entities.rag import DocumentChunk, SearchResult
+from src.core.protocols.embeddings import EmbeddingsProtocol
 from src.core.protocols.vector_store import VectorStoreProtocol
 
 logger = logging.getLogger(__name__)
@@ -16,11 +17,13 @@ class QdrantRepository(VectorStoreProtocol):
         self,
         url: str,
         collection_name: str,
+        embeddings: EmbeddingsProtocol,
         vector_size: int = 1536,
     ) -> None:
         self._url = url
         self._collection_name = collection_name
         self._vector_size = vector_size
+        self._embeddings = embeddings
         self._client: AsyncQdrantClient | None = None
 
     def _get_client(self) -> AsyncQdrantClient:
@@ -48,39 +51,24 @@ class QdrantRepository(VectorStoreProtocol):
             )
             logger.info(f"Created Qdrant collection: {self._collection_name}")
 
-    def _mock_embed(self, text: str) -> list[float]:
-        """For local testing"""
-        import hashlib
-
-        h = hashlib.sha256(text.encode("utf-8")).digest()
-        return [(b / 255.0) for b in (h * (self._vector_size // len(h) + 1))[: self._vector_size]]
-
     async def upsert(self, chunks: Sequence[DocumentChunk]) -> None:
         client = self._get_client()
         await self._ensure_collection_exists()
 
+        texts_to_embed = [chunk.content for chunk in chunks]
+        vectors = await self._embeddings.embed_documents(texts_to_embed)
+
         points: list[models.PointStruct] = []
-        for chunk in chunks:
-            vector = (
-                chunk.embedding if chunk.embedding is not None else self._mock_embed(chunk.content)
-            )
 
+        for chunk, vector in zip(chunks, vectors, strict=True):
             point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, chunk.id))
-
             payload: dict[str, Any] = {
                 "chunk_id": chunk.id,
                 "content": chunk.content,
+                "source_id": chunk.metadata.get("source_id", "unknown"),
                 "metadata": chunk.metadata,
-                "source_id": chunk.metadata.get("source_id", "unknown_source"),
             }
-
-            points.append(
-                models.PointStruct(
-                    id=point_id,
-                    vector=vector,
-                    payload=payload,
-                )
-            )
+            points.append(models.PointStruct(id=point_id, vector=vector, payload=payload))
 
         if points:
             await client.upsert(
@@ -92,7 +80,7 @@ class QdrantRepository(VectorStoreProtocol):
         client = self._get_client()
         await self._ensure_collection_exists()
 
-        query_vector = self._mock_embed(query)
+        query_vector = await self._embeddings.embed_query(query)
 
         response = await client.query_points(
             collection_name=self._collection_name,
@@ -101,18 +89,15 @@ class QdrantRepository(VectorStoreProtocol):
             with_payload=True,
         )
 
-        results: list[SearchResult] = []
-        for scored_point in response.points:
-            payload = scored_point.payload or {}
-            results.append(
-                SearchResult(
-                    content=str(payload.get("content", "")),
-                    source_id=str(payload.get("source_id", "unknown")),
-                    score=float(scored_point.score),
-                    metadata=dict(payload.get("metadata", {})),
-                )
+        return [
+            SearchResult(
+                content=str(point.payload.get("content", "") if point.payload else ""),
+                source_id=str(point.payload.get("source_id", "unknown") if point.payload else ""),
+                score=float(point.score),
+                metadata=dict(point.payload.get("metadata", {}) if point.payload else {}),
             )
-        return results
+            for point in response.points
+        ]
 
     async def is_healthy(self) -> bool:
         try:

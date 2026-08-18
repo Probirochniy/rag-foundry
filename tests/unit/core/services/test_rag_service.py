@@ -27,13 +27,13 @@ async def test_rag_service_cache_hit() -> None:
 
 @pytest.mark.asyncio
 async def test_rag_service_cache_miss() -> None:
-    test_question = "как поднять кубер"
+    test_question = "how to run kubernetes"
     test_file = "k8s.pdf"
 
     cache = CacheStoreMock()
     search_mock = [SearchResult(content="Инструкция по куберу", source_id=test_file, score=0.95)]
     vector_store = VectorStoreMock(mock_results=search_mock)
-    llm = LLMClientMock(default_answer="Ответ LLM")
+    llm = LLMClientMock(default_answer="LLM response")
 
     service = RAGService(vector_store=vector_store, cache_store=cache, llm_client=llm)
 
@@ -45,7 +45,7 @@ async def test_rag_service_cache_miss() -> None:
     assert llm.generate_called is True
     assert cache.set_called is True
 
-    assert f"Ответ LLM: {test_question}" in result.answer
+    assert f"LLM response: {test_question}" in result.answer
     assert result.sources == ["k8s.pdf"]
 
     cached_val = await cache.get(test_question)
