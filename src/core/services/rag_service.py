@@ -32,7 +32,5 @@ class RAGService:
 
     async def ask_stream(self, query: str, top_k: int = 3) -> AsyncIterator[str]:
         search_results = await self._vector_store.search(query=query, top_k=top_k)
-        async for chunk in await self._llm_client.generate_stream(
-            query=query, context=search_results
-        ):
+        async for chunk in self._llm_client.generate_stream(query=query, context=search_results):
             yield chunk
