@@ -1,9 +1,8 @@
 import logging
 from collections.abc import AsyncIterator
 
+from langchain.chat_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_openai import ChatOpenAI
-from pydantic import SecretStr
 
 from src.core.config import settings
 from src.core.entities.rag import GeneratedAnswer, SearchResult
@@ -15,18 +14,8 @@ logger = logging.getLogger(__name__)
 class LangChainLLMAdapter(LLMClientProtocol):
     """Simple adapter for LangChain's ChatOpenAI to fit the LLMClientProtocol interface."""
 
-    def __init__(
-        self,
-        api_key: str,
-        model_name: str,
-        temperature: float = 0.1,
-    ) -> None:
-        self._llm = ChatOpenAI(
-            api_key=SecretStr(api_key),
-            model=model_name,
-            temperature=temperature,
-            streaming=True,
-        )
+    def __init__(self, llm: BaseChatModel) -> None:
+        self._llm = llm
 
     def _format_context(self, context: list[SearchResult]) -> str:
         if not context:

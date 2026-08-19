@@ -8,6 +8,8 @@ class VectorStoreMock(VectorStoreProtocol):
     def __init__(self, mock_results: list[SearchResult] | None = None) -> None:
         self.mock_results = mock_results or []
         self.search_called = False
+        self.upsert_called = False
+        self.last_upserted_chunks = []
         self.last_query: str | None = None
         self.last_top_k: int | None = None
 
@@ -18,7 +20,8 @@ class VectorStoreMock(VectorStoreProtocol):
         return self.mock_results
 
     async def upsert(self, chunks: Sequence[DocumentChunk]) -> None:
-        pass
+        self.upsert_called = True
+        self.last_upserted_chunks = list(chunks)
 
     async def is_healthy(self) -> bool:
         return True

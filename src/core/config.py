@@ -24,6 +24,12 @@ class Settings(BaseSettings):
     openai_model: str = os.environ.get("OPENAI_MODEL", "gpt-5.6-sol")
     openai_temperature: float = float(os.environ.get("OPENAI_TEMPERATURE", 0.1))
 
+    vllm_base_url: str = os.environ.get("VLLM_BASE_URL", "")
+    vllm_model: str = os.environ.get("VLLM_MODEL", "gemma-4-26B")
+    vllm_temperature: float = float(os.environ.get("VLLM_TEMPERATURE", 0.1))
+
+    llm_provider: str = os.environ.get("LLM_PROVIDER", "openai")
+
     rag_system_prompt: str = (
         "You are a high-class RAG Foundry technical assistant"
         " that answers questions based on the provided context."
