@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     tei_batch_size: int = 32
     embedding_dimension: int = 384
 
+    chunk_size: int = 500
+    chunk_overlap: int = 50
+
     # OpenAI
     openai_api_key: str = ""
     openai_model: str = "gpt-5.6-sol"
