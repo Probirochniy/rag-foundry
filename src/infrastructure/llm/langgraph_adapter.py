@@ -26,17 +26,6 @@ class FactCheckEvaluation(BaseModel):
     reasoning: str = Field(default="", description="Brief reasoning behind the verdict.")
 
 
-def _extract_json_from_text(text: str) -> dict[str, Any] | None:
-    match = re.search(r"\{.*?\}", text, re.DOTALL)
-    if match:
-        try:
-            parsed = json.loads(match.group(0))
-            return parsed if isinstance(parsed, dict) else None
-        except Exception:
-            return None
-    return None
-
-
 class GraphState(TypedDict):
     query: str
     context_text: str
@@ -72,32 +61,34 @@ class LangGraphLLMAdapter(LLMClientProtocol):
                 "with_structured_output not supported, falling back to prompt-based JSON parsing"
             )
         except Exception as e:
-            logger.warning(f"Structured output failed: {e}, attempting JSON fallback")
+            logger.warning(f"Structured output failed: {e}, attempting fallback")
 
-        # Fallback to prompt-based JSON parsing
-        json_prompt = (
+        # Fallback to simple questioning
+        prompt = (
             f"{critic_prompt}\n\n"
-            "IMPORTANT: Respond ONLY with a valid JSON object in this format:\n"
-            '{"is_faithful": true, "reasoning": "your explanation"}'
+            "IMPORTANT:"
+            "Evaluate the answer and respond EXCLUSIVELY with a JSON object in this format:\n"
+            '{"reasoning": "brief fact check explanation", "is_faithful": true}\n'
+            "or\n"
+            '{"reasoning": "brief fact check explanation", "is_faithful": false}'
         )
 
-        raw_response = await self._llm.ainvoke([HumanMessage(content=json_prompt)])
-        raw_text = str(raw_response.content).strip()
+        try:
+            response = await self._llm.ainvoke([HumanMessage(content=prompt)])
+            raw_text = str(response.content).strip()
+            match = re.search(r"\{.*?\}", raw_text, re.DOTALL)
+            if match:
+                data: dict[str, Any] = json.loads(match.group(0))
+                if "is_faithful" in data:
+                    return bool(data["is_faithful"])
 
-        parsed_json = _extract_json_from_text(raw_text)
-        if parsed_json and "is_faithful" in parsed_json:
-            return bool(parsed_json["is_faithful"])
+            logger.warning(
+                f"LLM returned invalid JSON for critic: {raw_text}. Falling back to faithful."
+            )
+        except Exception as e:
+            logger.warning(f"Critic evaluation failed with exception: {e}")
 
-        logger.warning(
-            f"Failed to parse JSON from critic output: {raw_text}. Running heuristic fallback."
-        )
-
-        # Seethe and check for keywords as a last resort
-        upper_text = raw_text.upper()
-        if "NO" in upper_text or "FALSE" in upper_text or "HALLUCINATION" in upper_text:
-            return False
-
-        # Give up and assume faithful if we can't determine
+        # fail-open. seethe cry but avoid blocking the pipeline
         return True
 
     def _build_graph(self) -> CompiledStateGraph[GraphState, None, GraphState, GraphState]:

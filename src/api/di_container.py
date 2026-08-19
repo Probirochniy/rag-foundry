@@ -1,7 +1,8 @@
+import typing
 from functools import lru_cache
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, Request
 
 from src.core.config import Settings, settings
 from src.core.protocols.cache import CacheStoreProtocol
@@ -9,12 +10,11 @@ from src.core.protocols.embeddings import EmbeddingsProtocol
 from src.core.protocols.llm import LLMClientProtocol
 from src.core.protocols.vector_store import VectorStoreProtocol
 from src.core.services.rag_service import RAGService
-from src.infrastructure.cache.redis_repository import RedisCacheRepository
 from src.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
+from src.infrastructure.embeddings.tei_embed_adapter import TEIEmbedAdapter
 from src.infrastructure.llm.factory import create_llm
 from src.infrastructure.llm.langchain_adapter import LangChainLLMAdapter
 from src.infrastructure.llm.langgraph_adapter import LangGraphLLMAdapter
-from src.infrastructure.vector_store.qdrant_repository import QdrantRepository
 
 
 @lru_cache
@@ -23,23 +23,23 @@ def get_settings() -> Settings:
 
 
 @lru_cache
-def get_embeddings_adapter() -> EmbeddingsProtocol:
+def get_fastembed_adapter() -> EmbeddingsProtocol:
     return FastEmbedAdapter()
 
 
-@lru_cache
-def get_cache_repository() -> CacheStoreProtocol:
-    return RedisCacheRepository(redis_url=settings.redis_url)
-
-
-@lru_cache
-def get_vector_repository() -> VectorStoreProtocol:
-    return QdrantRepository(
-        url=settings.qdrant_url,
-        collection_name=settings.qdrant_collection_name,
-        embeddings=get_embeddings_adapter(),
-        vector_size=settings.embedding_dimension,
+def get_embeddings_adapter() -> EmbeddingsProtocol:
+    return TEIEmbedAdapter(
+        base_url=settings.tei_url,
+        batch_size=settings.tei_batch_size,
     )
+
+
+def get_cache_repository(request: Request) -> CacheStoreProtocol:
+    return typing.cast(CacheStoreProtocol, request.app.state.redis)
+
+
+def get_vector_repository(request: Request) -> VectorStoreProtocol:
+    return typing.cast(VectorStoreProtocol, request.app.state.vector_repo)
 
 
 @lru_cache

@@ -23,3 +23,6 @@ class FastEmbedAdapter(EmbeddingsProtocol):
             lambda: cast(list[Sequence[float]], list(self._model.embed(texts)))
         )
         return [[float(value) for value in embedding] for embedding in embeddings]
+
+    async def is_healthy(self) -> bool:
+        return True  # FastEmbed is a local model, so we assume it's always healthy

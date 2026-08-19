@@ -19,6 +19,16 @@ services:
       - redis_data:/data
     command: ["redis-server", "--appendonly", "yes"]
 
+  tei:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-latest
+    container_name: rag_foundry_tei
+    ports:
+      - "8080:80"
+    environment:
+      - MODEL_ID=BAAI/bge-small-en-v1.5
+      - PORT=80
+    command: ["--model-id", "BAAI/bge-small-en-v1.5", "--port", "80"]
+
 volumes:
   qdrant_data:
   redis_data:

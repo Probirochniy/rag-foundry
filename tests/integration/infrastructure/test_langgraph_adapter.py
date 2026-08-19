@@ -19,7 +19,7 @@ async def test_generate_answer_happy_path(mock_context, make_adapter):
     adapter = make_adapter(
         [
             "Based answer.",
-            '{"is_faithful": true, "reasoning": "strictly grounded in context"}',
+            '{"reasoning": "strictly grounded in context", "is_faithful": true}',
         ]
     )
     result = await adapter.generate_answer(
@@ -36,9 +36,9 @@ async def test_generate_answer_hallucination_retry(mock_context, make_adapter):
     adapter = make_adapter(
         [
             "Cringe answer.",
-            '{"is_faithful": false, "reasoning": "hallucination found"}',
+            '{"reasoning": "hallucination found", "is_faithful": false}',
             "Based answer.",
-            '{"is_faithful": true, "reasoning": "perfect match"}',
+            '{"reasoning": "perfect match", "is_faithful": true}',
         ]
     )
     result = await adapter.generate_answer(
@@ -54,9 +54,9 @@ async def test_generate_stream_hallucination_retry(mock_context, make_adapter):
     adapter = make_adapter(
         [
             "Cringe answer.",
-            '{"is_faithful": false, "reasoning": "hallucination"}',
+            '{"reasoning": "hallucination", "is_faithful": false}',
             "Based answer.",
-            '{"is_faithful": true, "reasoning": "all good"}',
+            '{"reasoning": "all good", "is_faithful": true}',
         ]
     )
 
