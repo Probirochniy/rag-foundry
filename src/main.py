@@ -2,6 +2,7 @@ from collections.abc import AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.router import root_router
 from src.core.config import settings
@@ -53,3 +54,11 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
