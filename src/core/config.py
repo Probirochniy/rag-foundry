@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     # Qdrant Vector DB
     qdrant_url: str = "http://localhost:6333"
     qdrant_collection_name: str = "knowledge_base"
+    qdrant_upsert_batch_size: int = 128
 
     # Embeddings (TEI)
     tei_url: str = "http://localhost:8080"
@@ -37,7 +38,9 @@ class Settings(BaseSettings):
 
     llm_provider: str = "openai"
 
-    # Prompts & Markers
+    # Hallucination detection
+    max_hallucination_retries: int = 1
+
     rag_system_prompt: str = (
         "You are a high-class RAG Foundry technical assistant"
         " that answers questions based on the provided context."

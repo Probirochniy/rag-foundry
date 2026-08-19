@@ -1,3 +1,4 @@
+import itertools
 import logging
 from collections.abc import Sequence
 
@@ -49,11 +50,10 @@ class TEIEmbedAdapter(EmbeddingsProtocol):
 
         all_embeddings: list[list[float]] = []
 
-        for i in range(0, len(texts), self._batch_size):
-            batch = list(texts[i : i + self._batch_size])
+        for batch in itertools.batched(texts, self._batch_size):
             response = await self._client.post(
                 "/embed",
-                json={"inputs": batch, "truncate": True},
+                json={"inputs": list(batch), "truncate": True},
             )
             response.raise_for_status()
             batch_data: list[list[float]] = response.json()

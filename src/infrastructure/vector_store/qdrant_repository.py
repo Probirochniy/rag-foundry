@@ -1,11 +1,12 @@
 import asyncio
+import itertools
 import logging
 import uuid
 from collections.abc import Sequence
-from typing import Any
 
 from qdrant_client import AsyncQdrantClient, models
 
+from src.core.config import settings
 from src.core.entities.rag import DocumentChunk, SearchResult
 from src.core.protocols.embeddings import EmbeddingsProtocol
 from src.core.protocols.vector_store import VectorStoreProtocol
@@ -54,25 +55,30 @@ class QdrantRepository(VectorStoreProtocol):
 
     async def upsert(self, chunks: Sequence[DocumentChunk]) -> None:
         await self.ensure_collection_exists()
+        if not chunks:
+            return
 
-        texts_to_embed = [chunk.content for chunk in chunks]
-        vectors = await self._embeddings.embed_documents(texts_to_embed)
+        batch_size = settings.qdrant_upsert_batch_size
 
-        points: list[models.PointStruct] = []
-        for chunk, vector in zip(chunks, vectors, strict=True):
-            point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, chunk.id))
-            payload: dict[str, Any] = {
-                "chunk_id": chunk.id,
-                "content": chunk.content,
-                "source_id": chunk.metadata.get("source_id", "unknown"),
-                "metadata": chunk.metadata,
-            }
-            points.append(models.PointStruct(id=point_id, vector=vector, payload=payload))
+        for chunk_batch in itertools.batched(chunks, batch_size):
+            texts_to_embed = [c.content for c in chunk_batch]
+            vectors = await self._embeddings.embed_documents(texts_to_embed)
 
-        if points:
+            points: list[models.PointStruct] = []
+            for chunk, vector in zip(chunk_batch, vectors, strict=True):
+                point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, chunk.id))
+                payload = {
+                    "chunk_id": chunk.id,
+                    "content": chunk.content,
+                    "source_id": chunk.metadata.get("source_id", "unknown"),
+                    "metadata": chunk.metadata,
+                }
+                points.append(models.PointStruct(id=point_id, vector=vector, payload=payload))
+
             await self._client.upsert(
                 collection_name=self._collection_name,
                 points=points,
+                wait=False,
             )
 
     async def search(self, query: str, top_k: int = 3) -> list[SearchResult]:

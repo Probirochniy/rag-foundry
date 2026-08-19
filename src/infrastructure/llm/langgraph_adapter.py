@@ -16,8 +16,6 @@ from src.core.protocols.llm import LLMClientProtocol
 
 logger = logging.getLogger(__name__)
 
-MAX_RETRIES = 1
-
 
 class FactCheckEvaluation(BaseModel):
     is_faithful: bool = Field(
@@ -117,7 +115,7 @@ class LangGraphLLMAdapter(LLMClientProtocol):
             return {"is_faithful": is_faithful}
 
         def route_validation(state: GraphState) -> Literal["end", "retry"]:
-            if state["is_faithful"] or state["retry_count"] > MAX_RETRIES:
+            if state["is_faithful"] or state["retry_count"] > settings.max_hallucination_retries:
                 return "end"
             logger.warning("Hallucination detected in RAG graph, retrying...")
             return "retry"
