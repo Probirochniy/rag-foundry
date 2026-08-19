@@ -11,7 +11,6 @@ from src.core.protocols.llm import LLMClientProtocol
 from src.core.protocols.vector_store import VectorStoreProtocol
 from src.core.services.rag_service import RAGService
 from src.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
-from src.infrastructure.embeddings.tei_embed_adapter import TEIEmbedAdapter
 from src.infrastructure.llm.factory import create_llm
 from src.infrastructure.llm.langchain_adapter import LangChainLLMAdapter
 from src.infrastructure.llm.langgraph_adapter import LangGraphLLMAdapter
@@ -27,15 +26,12 @@ def get_fastembed_adapter() -> EmbeddingsProtocol:
     return FastEmbedAdapter()
 
 
-def get_embeddings_adapter() -> EmbeddingsProtocol:
-    return TEIEmbedAdapter(
-        base_url=settings.tei_url,
-        batch_size=settings.tei_batch_size,
-    )
+def get_embeddings_adapter(request: Request) -> EmbeddingsProtocol:
+    return typing.cast(EmbeddingsProtocol, request.app.state.embeddings_repo)
 
 
 def get_cache_repository(request: Request) -> CacheStoreProtocol:
-    return typing.cast(CacheStoreProtocol, request.app.state.redis)
+    return typing.cast(CacheStoreProtocol, request.app.state.cache_repo)
 
 
 def get_vector_repository(request: Request) -> VectorStoreProtocol:

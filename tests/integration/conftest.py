@@ -4,13 +4,14 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from src.core.entities.rag import SearchResult
-from src.main import app
+from src.main import app, lifespan
 
 
 @pytest.fixture
 async def client() -> AsyncGenerator[AsyncClient, None]:
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        yield ac
+    async with lifespan(app):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            yield ac
 
 
 @pytest.fixture
