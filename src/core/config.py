@@ -1,5 +1,3 @@
-import os
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -8,28 +6,34 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
+        case_sensitive=False,
     )
 
     app_name: str = "RAG Foundry"
     environment: str = "local"
 
-    redis_url: str = os.environ.get("REDIS_URL", "")
-    redis_cache_ttl_seconds: int = int(os.environ.get("REDIS_CACHE_TTL_SECONDS", 3600))
+    # Redis
+    redis_url: str = "redis://localhost:6379/0"
+    redis_cache_ttl_seconds: int = 3600
 
-    qdrant_url: str = os.environ.get("QDRANT_URL", "")
-    qdrant_collection_name: str = os.environ.get("QDRANT_COLLECTION_NAME", "knowledge_base")
-    embedding_dimension: int = int(os.environ.get("EMBEDDING_DIMENSION", 384))
+    # Qdrant Vector DB
+    qdrant_url: str = "http://localhost:6333"
+    qdrant_collection_name: str = "knowledge_base"
+    embedding_dimension: int = 384
 
-    openai_api_key: str = os.environ.get("OPENAI_API_KEY", "")
-    openai_model: str = os.environ.get("OPENAI_MODEL", "gpt-5.6-sol")
-    openai_temperature: float = float(os.environ.get("OPENAI_TEMPERATURE", 0.1))
+    # OpenAI
+    openai_api_key: str = ""
+    openai_model: str = "gpt-5.6-sol"
+    openai_temperature: float = 0.1
 
-    vllm_base_url: str = os.environ.get("VLLM_BASE_URL", "")
-    vllm_model: str = os.environ.get("VLLM_MODEL", "gemma-4-26B")
-    vllm_temperature: float = float(os.environ.get("VLLM_TEMPERATURE", 0.1))
+    # vLLM
+    vllm_base_url: str = ""
+    vllm_model: str = "gemma-4-26B"
+    vllm_temperature: float = 0.1
 
-    llm_provider: str = os.environ.get("LLM_PROVIDER", "openai")
+    llm_provider: str = "openai"
 
+    # Prompts & Markers
     rag_system_prompt: str = (
         "You are a high-class RAG Foundry technical assistant"
         " that answers questions based on the provided context."
@@ -46,8 +50,7 @@ class Settings(BaseSettings):
         "You are a strict fact-checker."
         " Assess whether the answer is based EXCLUSIVELY on facts from the context.\n"
         "Context:\n{context}\n\n"
-        "Answer:\n{answer}\n\n"
-        "Reply with only one word: YES (if the facts align) or NO (if there is fabrication)."
+        "Answer:\n{answer}"
     )
 
     hallucination_marker: str = "[RESET]"
