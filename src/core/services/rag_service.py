@@ -1,6 +1,6 @@
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Sequence
 
-from src.core.entities.rag import GeneratedAnswer
+from src.core.entities.rag import DocumentChunk, GeneratedAnswer
 from src.core.protocols.cache import CacheStoreProtocol
 from src.core.protocols.llm import LLMClientProtocol
 from src.core.protocols.vector_store import VectorStoreProtocol
@@ -16,6 +16,9 @@ class RAGService:
         self._vector_store = vector_store
         self._cache_store = cache_store
         self._llm_client = llm_client
+
+    async def ingest_documents(self, chunks: Sequence[DocumentChunk]) -> None:
+        await self._vector_store.upsert(chunks=chunks)
 
     async def ask(self, query: str, top_k: int = 3) -> GeneratedAnswer:
         cached_result = await self._cache_store.get(query)
