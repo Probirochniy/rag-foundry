@@ -63,4 +63,5 @@ def get_rag_service(
         vector_store=vector_store,
         cache_store=cache_store,
         llm_client=llm_client,
+        cache_ttl_seconds=settings.redis_cache_ttl_seconds,
     )

@@ -14,32 +14,25 @@ logger = logging.getLogger(__name__)
 class RedisCacheRepository(CacheStoreProtocol):
     def __init__(self, redis_url: str) -> None:
         self._redis_url = redis_url
-        self._client: aioredis.Redis | None = None
-
-    def _get_client(self) -> aioredis.Redis:
-        if self._client is None:
-            self._client = aioredis.from_url(
-                self._redis_url,
-                encoding="utf-8",
-                decode_responses=True,
-            )
-        return self._client
-
-    def _generate_key(self, query: str) -> str:
-        normalized_query = query.strip().lower()
-        query_hash = hashlib.sha256(normalized_query.encode("utf-8")).hexdigest()
-        return f"rag:cache:{query_hash}"
+        self._client = aioredis.from_url(
+            self._redis_url,
+            encoding="utf-8",
+            decode_responses=True,
+        )
 
     async def close(self) -> None:
-        if self._client is not None:
-            await self._client.aclose()
-            self._client = None
+        await self._client.aclose()
 
-    async def get(self, query: str) -> GeneratedAnswer | None:
+    def _generate_key(self, query: str, top_k: int) -> str:
+        normalized_query = query.strip().lower()
+        composite_raw = f"{normalized_query}:top_k={top_k}"
+        query_hash = hashlib.sha256(composite_raw.encode("utf-8")).hexdigest()
+        return f"rag:cache:{query_hash}"
+
+    async def get(self, query: str, top_k: int = 3) -> GeneratedAnswer | None:
         try:
-            client = self._get_client()
-            key = self._generate_key(query)
-            data = await client.get(key)
+            key = self._generate_key(query, top_k)
+            data = await self._client.get(key)
             if not data:
                 return None
 
@@ -53,15 +46,20 @@ class RedisCacheRepository(CacheStoreProtocol):
             logger.warning(f"Failed to read from Redis cache: {err}")
             return None
 
-    async def set(self, query: str, answer: GeneratedAnswer, ttl_seconds: int = 3600) -> None:
+    async def set(
+        self,
+        query: str,
+        answer: GeneratedAnswer,
+        top_k: int = 3,
+        ttl_seconds: int = 3600,
+    ) -> None:
         try:
-            client = self._get_client()
-            key = self._generate_key(query)
+            key = self._generate_key(query, top_k)
             payload = {
                 "answer": answer.answer,
                 "sources": answer.sources,
             }
-            await client.set(
+            await self._client.set(
                 name=key,
                 value=json.dumps(payload),
                 ex=ttl_seconds,
@@ -71,8 +69,7 @@ class RedisCacheRepository(CacheStoreProtocol):
 
     async def is_healthy(self) -> bool:
         try:
-            client = self._get_client()
-            response = await client.ping()
+            response = await self._client.ping()
             return bool(response)
         except Exception:
             return False

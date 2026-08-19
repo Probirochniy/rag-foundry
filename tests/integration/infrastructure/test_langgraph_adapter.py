@@ -19,7 +19,7 @@ async def test_generate_answer_happy_path(mock_context, make_adapter):
     adapter = make_adapter(
         [
             "Based answer.",
-            "YES, strictly grounded in context",
+            '{"is_faithful": true, "reasoning": "strictly grounded in context"}',
         ]
     )
     result = await adapter.generate_answer(
@@ -36,9 +36,9 @@ async def test_generate_answer_hallucination_retry(mock_context, make_adapter):
     adapter = make_adapter(
         [
             "Cringe answer.",
-            "NO, hallucination found",
+            '{"is_faithful": false, "reasoning": "hallucination found"}',
             "Based answer.",
-            "YES, perfect context match",
+            '{"is_faithful": true, "reasoning": "perfect match"}',
         ]
     )
     result = await adapter.generate_answer(
@@ -54,9 +54,9 @@ async def test_generate_stream_hallucination_retry(mock_context, make_adapter):
     adapter = make_adapter(
         [
             "Cringe answer.",
-            "NO",
+            '{"is_faithful": false, "reasoning": "hallucination"}',
             "Based answer.",
-            "YES",
+            '{"is_faithful": true, "reasoning": "all good"}',
         ]
     )
 
@@ -70,5 +70,5 @@ async def test_generate_stream_hallucination_retry(mock_context, make_adapter):
     full_output = "".join(chunks)
 
     assert "Cringe answer." in full_output
-    assert "⚠️ HALLUCINATION DETECTED! Retrying:" in full_output
+    assert "[RESET]" in full_output
     assert "Based answer." in full_output

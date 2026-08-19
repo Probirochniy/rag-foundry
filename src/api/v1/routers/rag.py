@@ -1,4 +1,5 @@
-from collections.abc import AsyncIterator
+import json
+from collections.abc import AsyncGenerator
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
@@ -37,9 +38,14 @@ async def stream_rag(
     request: QueryRequest,
     rag_service: Annotated[RAGService, Depends(get_rag_service)],
 ) -> StreamingResponse:
-    async def event_generator() -> AsyncIterator[str]:
-        async for token in rag_service.ask_stream(query=request.query, top_k=request.top_k):
-            yield f"data: {token}\n\n"
+    async def event_generator() -> AsyncGenerator[str, None]:
+        async for chunk in rag_service.ask_stream(query=request.query, top_k=request.top_k):
+            if chunk == "[RESET]":
+                yield 'event: reset\ndata: {"reason": "hallucination_detected"}\n\n'
+            else:
+                yield f"event: delta\ndata: {json.dumps({'content': chunk})}\n\n"
+
+        yield "event: done\ndata: {}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 

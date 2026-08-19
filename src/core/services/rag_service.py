@@ -12,24 +12,30 @@ class RAGService:
         vector_store: VectorStoreProtocol,
         cache_store: CacheStoreProtocol,
         llm_client: LLMClientProtocol,
+        cache_ttl_seconds: int = 3600,
     ) -> None:
         self._vector_store = vector_store
         self._cache_store = cache_store
         self._llm_client = llm_client
+        self._cache_ttl_seconds = cache_ttl_seconds
 
     async def ingest_documents(self, chunks: Sequence[DocumentChunk]) -> None:
         await self._vector_store.upsert(chunks=chunks)
 
     async def ask(self, query: str, top_k: int = 3) -> GeneratedAnswer:
-        cached_result = await self._cache_store.get(query)
+        cached_result = await self._cache_store.get(query=query, top_k=top_k)
         if cached_result:
             return cached_result
 
         search_results = await self._vector_store.search(query=query, top_k=top_k)
-
         generated = await self._llm_client.generate_answer(query=query, context=search_results)
 
-        await self._cache_store.set(query=query, answer=generated, ttl_seconds=3600)
+        await self._cache_store.set(
+            query=query,
+            answer=generated,
+            top_k=top_k,
+            ttl_seconds=self._cache_ttl_seconds,
+        )
 
         return generated
 

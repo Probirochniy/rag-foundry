@@ -18,7 +18,7 @@ class Settings(BaseSettings):
 
     qdrant_url: str = os.environ.get("QDRANT_URL", "")
     qdrant_collection_name: str = os.environ.get("QDRANT_COLLECTION_NAME", "knowledge_base")
-    embedding_dimension: int = int(os.environ.get("EMBEDDING_DIMENSION", 1536))
+    embedding_dimension: int = int(os.environ.get("EMBEDDING_DIMENSION", 384))
 
     openai_api_key: str = os.environ.get("OPENAI_API_KEY", "")
     openai_model: str = os.environ.get("OPENAI_MODEL", "gpt-5.6-sol")
@@ -49,6 +49,8 @@ class Settings(BaseSettings):
         "Answer:\n{answer}\n\n"
         "Reply with only one word: YES (if the facts align) or NO (if there is fabrication)."
     )
+
+    hallucination_marker: str = "[RESET]"
 
 
 settings = Settings()
