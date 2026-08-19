@@ -29,6 +29,18 @@ services:
       - PORT=80
     command: ["--model-id", "BAAI/bge-small-en-v1.5", "--port", "80"]
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: rag_foundry_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - qdrant
+      - redis
+      - tei
+
 volumes:
   qdrant_data:
   redis_data:
