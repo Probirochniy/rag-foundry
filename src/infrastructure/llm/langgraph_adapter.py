@@ -8,13 +8,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
-from collections.abc import AsyncIterator, Mapping
-from typing import Literal, TypedDict
-
-from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
-from langgraph.graph import END, START, StateGraph
-from langgraph.graph.state import CompiledStateGraph
+from pydantic import BaseModel, Field
 
 from src.core.config import settings
 from src.core.entities.rag import GeneratedAnswer, SearchResult
