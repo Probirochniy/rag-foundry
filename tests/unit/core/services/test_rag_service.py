@@ -1,6 +1,6 @@
 import pytest
 
-from src.core.entities.rag import GeneratedAnswer, SearchResult
+from src.core.entities.rag import DocumentChunk, GeneratedAnswer, SearchResult
 from src.core.services.rag_service import RAGService
 from tests.unit.mocks.cache import CacheStoreMock
 from tests.unit.mocks.llm import LLMClientMock
@@ -66,3 +66,22 @@ async def test_rag_service_streaming() -> None:
         chunks.append(chunk)
 
     assert chunks == ["chunk1 ", "chunk2 ", "chunk3"]
+
+
+@pytest.mark.asyncio
+async def test_rag_service_ingest_documents() -> None:
+    cache = CacheStoreMock()
+    vector_store = VectorStoreMock()
+    llm = LLMClientMock()
+
+    service = RAGService(vector_store=vector_store, cache_store=cache, llm_client=llm)
+
+    chunks_to_ingest = [
+        DocumentChunk(id="1", content="Content 1", metadata={"source_id": "doc1.pdf"}),
+        DocumentChunk(id="2", content="Content 2", metadata={"source_id": "doc2.pdf"}),
+    ]
+
+    await service.ingest_documents(chunks=chunks_to_ingest)
+
+    assert vector_store.upsert_called is True
+    assert vector_store.last_upserted_chunks == chunks_to_ingest

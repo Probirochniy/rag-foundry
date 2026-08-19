@@ -24,6 +24,12 @@ class Settings(BaseSettings):
     openai_model: str = os.environ.get("OPENAI_MODEL", "gpt-5.6-sol")
     openai_temperature: float = float(os.environ.get("OPENAI_TEMPERATURE", 0.1))
 
+    vllm_base_url: str = os.environ.get("VLLM_BASE_URL", "")
+    vllm_model: str = os.environ.get("VLLM_MODEL", "gemma-4-26B")
+    vllm_temperature: float = float(os.environ.get("VLLM_TEMPERATURE", 0.1))
+
+    llm_provider: str = os.environ.get("LLM_PROVIDER", "openai")
+
     rag_system_prompt: str = (
         "You are a high-class RAG Foundry technical assistant"
         " that answers questions based on the provided context."
@@ -31,12 +37,17 @@ class Settings(BaseSettings):
         "\n\nContext:\n{context}"
     )
 
+    hallucination_warning_prompt: str = (
+        "\n\nWARNING: The previous answer was flagged for hallucination! "
+        "Please provide a more accurate response based on the context."
+    )
+
     hallucination_critic_prompt: str = (
-        "You are a hallucination critic for RAG Foundry."
-        " Your task is to evaluate the answer provided by the RAG system"
-        " based on the context given. If the answer is not supported by the context,"
-        " you should indicate that the answer is hallucinated."
-        "\n\nContext:\n{context}\n\nAnswer:\n{answer}"
+        "You are a strict fact-checker."
+        " Assess whether the answer is based EXCLUSIVELY on facts from the context.\n"
+        "Context:\n{context}\n\n"
+        "Answer:\n{answer}\n\n"
+        "Reply with only one word: YES (if the facts align) or NO (if there is fabrication)."
     )
 
 
