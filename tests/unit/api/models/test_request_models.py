@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from src.api.v1.models.requests.query.query_request import QueryRequest
+from src.api.v1.models.query import QueryRequest
 
 
 def test_query_request_valid() -> None:
