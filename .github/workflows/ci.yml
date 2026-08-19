@@ -92,11 +92,11 @@ jobs:
         run: uv sync --locked --all-extras --dev
 
       - name: Start Services
-        run: docker compose -f docker-compose.dev.yml up -d --wait
+        run: docker compose -f docker-compose.test.yml up -d --wait
 
       - name: Run Integration Tests
         run: uv run pytest tests/integration
 
       - name: Stop Services
         if: always()
-        run: docker compose -f docker-compose.dev.yml down -v
+        run: docker compose -f docker-compose.test.yml down -v
