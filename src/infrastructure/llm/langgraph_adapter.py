@@ -18,10 +18,10 @@ logger = logging.getLogger(__name__)
 
 
 class FactCheckEvaluation(BaseModel):
+    reasoning: str = Field(default="", description="Brief reasoning behind the verdict.")
     is_faithful: bool = Field(
         description="True if the answer is grounded EXCLUSIVELY in the context, False otherwise."
     )
-    reasoning: str = Field(default="", description="Brief reasoning behind the verdict.")
 
 
 class GraphState(TypedDict):
