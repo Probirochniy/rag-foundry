@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import uuid
 from collections.abc import Sequence
@@ -25,25 +26,38 @@ class QdrantRepository(VectorStoreProtocol):
         self._vector_size = vector_size
         self._embeddings = embeddings
         self._client = AsyncQdrantClient(url=self._url)
+        self._collection_ensured = False
+        self._lock = asyncio.Lock()
 
     async def close(self) -> None:
         await self._client.close()
 
     async def ensure_collection_exists(self) -> None:
-        collections_response = await self._client.get_collections()
-        existing = [c.name for c in collections_response.collections]
+        if self._collection_ensured:
+            return
 
-        if self._collection_name not in existing:
-            await self._client.create_collection(
-                collection_name=self._collection_name,
-                vectors_config=models.VectorParams(
-                    size=self._vector_size,
-                    distance=models.Distance.COSINE,
-                ),
-            )
-            logger.info(f"Created Qdrant collection: {self._collection_name}")
+        async with self._lock:
+            if self._collection_ensured:
+                return
+
+            collections_response = await self._client.get_collections()
+            existing = [c.name for c in collections_response.collections]
+
+            if self._collection_name not in existing:
+                await self._client.create_collection(
+                    collection_name=self._collection_name,
+                    vectors_config=models.VectorParams(
+                        size=self._vector_size,
+                        distance=models.Distance.COSINE,
+                    ),
+                )
+                logger.info(f"Created Qdrant collection: {self._collection_name}")
+
+            self._collection_ensured = True
 
     async def upsert(self, chunks: Sequence[DocumentChunk]) -> None:
+        await self.ensure_collection_exists()
+
         texts_to_embed = [chunk.content for chunk in chunks]
         vectors = await self._embeddings.embed_documents(texts_to_embed)
 
@@ -65,6 +79,8 @@ class QdrantRepository(VectorStoreProtocol):
             )
 
     async def search(self, query: str, top_k: int = 3) -> list[SearchResult]:
+        await self.ensure_collection_exists()
+
         query_vector = await self._embeddings.embed_query(query)
 
         response = await self._client.query_points(
