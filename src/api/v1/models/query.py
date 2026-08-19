@@ -10,7 +10,7 @@ class QueryResponse(BaseModel):
 
     answer: str = Field(..., description="LLM generated answer")
     sources: list[str] = Field(default_factory=list, description="Source documents or chunks")
-    cached: bool = Field(default=False, description="Was response served from semantic cache")
+    cached: bool = Field(default=False, description="Was response served from cache")
 
     @classmethod
     def from_generated_answer(cls, generated_answer: GeneratedAnswer) -> typing.Self:

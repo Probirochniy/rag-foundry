@@ -54,7 +54,27 @@ async def test_rag_service_cache_miss() -> None:
 
 
 @pytest.mark.asyncio
-async def test_rag_service_streaming() -> None:
+async def test_rag_service_streaming_cache_hit() -> None:
+    test_question = "stream query"
+    cached_answer = GeneratedAnswer(answer="streamed answer", sources=["doc1.pdf"], cached=True)
+
+    cache = CacheStoreMock(initial_data={test_question: cached_answer})
+    vector_store = VectorStoreMock()
+    llm = LLMClientMock()
+
+    service = RAGService(vector_store=vector_store, cache_store=cache, llm_client=llm)
+
+    chunks: list[str] = []
+    async for chunk in service.ask_stream(query=test_question, top_k=3):
+        chunks.append(chunk)
+
+    assert chunks == ["streamed answer"]
+    assert vector_store.search_called is False
+    assert llm.generate_called is False
+
+
+@pytest.mark.asyncio
+async def test_rag_service_streaming_cache_miss() -> None:
     cache = CacheStoreMock()
     vector_store = VectorStoreMock()
     llm = LLMClientMock()
@@ -62,10 +82,14 @@ async def test_rag_service_streaming() -> None:
     service = RAGService(vector_store=vector_store, cache_store=cache, llm_client=llm)
 
     chunks: list[str] = []
-    async for chunk in service.ask_stream(query="стрим запрос", top_k=3):
+    async for chunk in service.ask_stream(query="stream query", top_k=3):
         chunks.append(chunk)
 
     assert chunks == ["chunk1 ", "chunk2 ", "chunk3"]
+
+    assert vector_store.search_called is True
+    cached_val = await cache.get(query="stream query", top_k=3)
+    assert cached_val is not None
 
 
 @pytest.mark.asyncio

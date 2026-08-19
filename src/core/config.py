@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     # Qdrant Vector DB
     qdrant_url: str = "http://localhost:6333"
     qdrant_collection_name: str = "knowledge_base"
+
+    # Embeddings (TEI)
+    tei_url: str = "http://localhost:8080"
+    tei_batch_size: int = 32
     embedding_dimension: int = 384
 
     # OpenAI
