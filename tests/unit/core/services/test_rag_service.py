@@ -48,7 +48,7 @@ async def test_rag_service_cache_miss() -> None:
     assert f"LLM response: {test_question}" in result.answer
     assert result.sources == ["k8s.pdf"]
 
-    cached_val = await cache.get(test_question)
+    cached_val = await cache.get(query=test_question, top_k=5)
     assert cached_val is not None
     assert cached_val.answer == result.answer
 

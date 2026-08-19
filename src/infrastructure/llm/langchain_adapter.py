@@ -1,7 +1,7 @@
 import logging
 from collections.abc import AsyncIterator
 
-from langchain.chat_models import BaseChatModel
+from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.core.config import settings
