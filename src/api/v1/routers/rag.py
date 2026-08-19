@@ -8,6 +8,7 @@ from fastapi.responses import StreamingResponse
 from src.api.di_container import get_rag_service
 from src.api.v1.models.ingest import IngestRequest, IngestResponse
 from src.api.v1.models.query import QueryRequest, QueryResponse
+from src.core.config import settings
 from src.core.entities.rag import GeneratedAnswer
 from src.core.services.rag_service import RAGService
 
@@ -40,7 +41,7 @@ async def stream_rag(
 ) -> StreamingResponse:
     async def event_generator() -> AsyncGenerator[str, None]:
         async for chunk in rag_service.ask_stream(query=request.query, top_k=request.top_k):
-            if chunk == "[RESET]":
+            if chunk == settings.hallucination_marker:
                 yield 'event: reset\ndata: {"reason": "hallucination_detected"}\n\n'
             else:
                 yield f"event: delta\ndata: {json.dumps({'content': chunk})}\n\n"

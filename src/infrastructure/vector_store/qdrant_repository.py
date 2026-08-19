@@ -37,9 +37,6 @@ class QdrantRepository(VectorStoreProtocol):
             return
 
         async with self._lock:
-            if self._collection_ensured:
-                return
-
             collections_response = await self._client.get_collections()
             existing = [c.name for c in collections_response.collections]
 
