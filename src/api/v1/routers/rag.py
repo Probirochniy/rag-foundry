@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
 from src.api.di_container import get_rag_service
-from src.api.v1.models.ingest import IngestRequest, IngestResponse
+from src.api.v1.models.ingest import IngestDocumentRequest, IngestResponse
 from src.api.v1.models.query import QueryRequest, QueryResponse
 from src.core.config import settings
 from src.core.entities.rag import GeneratedAnswer
@@ -55,14 +55,14 @@ async def stream_rag(
     "/ingest",
     response_model=IngestResponse,
     status_code=201,
-    summary="Ingest document chunks into vector store",
+    summary="Ingest document into vector store",
 )
-async def ingest_documents(
-    request: IngestRequest,
+async def ingest_document(
+    request: IngestDocumentRequest,
     rag_service: Annotated[RAGService, Depends(get_rag_service)],
 ) -> IngestResponse:
-    chunks = IngestRequest.to_document_chunks(request.documents)
-
-    await rag_service.ingest_documents(chunks)
-
-    return IngestResponse(status="success", ingested_count=len(chunks))
+    count = await rag_service.ingest_document(
+        source_id=request.source_id,
+        content=request.content,
+    )
+    return IngestResponse(status="success", ingested_count=count)

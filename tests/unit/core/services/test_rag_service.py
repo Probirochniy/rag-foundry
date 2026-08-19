@@ -4,6 +4,7 @@ from src.core.entities.rag import DocumentChunk, GeneratedAnswer, SearchResult
 from src.core.services.rag_service import RAGService
 from tests.unit.mocks.cache import CacheStoreMock
 from tests.unit.mocks.llm import LLMClientMock
+from tests.unit.mocks.splitter import TextSplitterMock
 from tests.unit.mocks.vector_store import VectorStoreMock
 
 
@@ -15,8 +16,11 @@ async def test_rag_service_cache_hit() -> None:
     cache = CacheStoreMock(initial_data={test_question: cached_answer})
     vector_store = VectorStoreMock()
     llm = LLMClientMock()
+    text_splitter = TextSplitterMock()
 
-    service = RAGService(vector_store=vector_store, cache_store=cache, llm_client=llm)
+    service = RAGService(
+        vector_store=vector_store, cache_store=cache, llm_client=llm, text_splitter=text_splitter
+    )
 
     result = await service.ask(query=test_question, top_k=3)
 
@@ -34,8 +38,11 @@ async def test_rag_service_cache_miss() -> None:
     search_mock = [SearchResult(content="Инструкция по куберу", source_id=test_file, score=0.95)]
     vector_store = VectorStoreMock(mock_results=search_mock)
     llm = LLMClientMock(default_answer="LLM response")
+    text_splitter = TextSplitterMock()
 
-    service = RAGService(vector_store=vector_store, cache_store=cache, llm_client=llm)
+    service = RAGService(
+        vector_store=vector_store, cache_store=cache, llm_client=llm, text_splitter=text_splitter
+    )
 
     result = await service.ask(query=test_question, top_k=5)
 
@@ -61,8 +68,11 @@ async def test_rag_service_streaming_cache_hit() -> None:
     cache = CacheStoreMock(initial_data={test_question: cached_answer})
     vector_store = VectorStoreMock()
     llm = LLMClientMock()
+    text_splitter = TextSplitterMock()
 
-    service = RAGService(vector_store=vector_store, cache_store=cache, llm_client=llm)
+    service = RAGService(
+        vector_store=vector_store, cache_store=cache, llm_client=llm, text_splitter=text_splitter
+    )
 
     chunks: list[str] = []
     async for chunk in service.ask_stream(query=test_question, top_k=3):
@@ -78,8 +88,11 @@ async def test_rag_service_streaming_cache_miss() -> None:
     cache = CacheStoreMock()
     vector_store = VectorStoreMock()
     llm = LLMClientMock()
+    text_splitter = TextSplitterMock()
 
-    service = RAGService(vector_store=vector_store, cache_store=cache, llm_client=llm)
+    service = RAGService(
+        vector_store=vector_store, cache_store=cache, llm_client=llm, text_splitter=text_splitter
+    )
 
     chunks: list[str] = []
     async for chunk in service.ask_stream(query="stream query", top_k=3):
@@ -93,19 +106,34 @@ async def test_rag_service_streaming_cache_miss() -> None:
 
 
 @pytest.mark.asyncio
-async def test_rag_service_ingest_documents() -> None:
+async def test_rag_service_ingest_document() -> None:
     cache = CacheStoreMock()
     vector_store = VectorStoreMock()
     llm = LLMClientMock()
+    text_splitter = TextSplitterMock()
 
-    service = RAGService(vector_store=vector_store, cache_store=cache, llm_client=llm)
+    service = RAGService(
+        vector_store=vector_store, cache_store=cache, llm_client=llm, text_splitter=text_splitter
+    )
 
-    chunks_to_ingest = [
-        DocumentChunk(id="1", content="Content 1", metadata={"source_id": "doc1.pdf"}),
-        DocumentChunk(id="2", content="Content 2", metadata={"source_id": "doc2.pdf"}),
-    ]
-
-    await service.ingest_documents(chunks=chunks_to_ingest)
+    count = await service.ingest_document(source_id="doc1.pdf", content="Content to split")
 
     assert vector_store.upsert_called is True
-    assert vector_store.last_upserted_chunks == chunks_to_ingest
+    assert count == 3
+    assert vector_store.last_upserted_chunks == [
+        DocumentChunk(
+            id="doc1.pdf#0",
+            content="chunk1",
+            metadata={"source_id": "doc1.pdf", "chunk_index": 0},
+        ),
+        DocumentChunk(
+            id="doc1.pdf#1",
+            content="chunk2",
+            metadata={"source_id": "doc1.pdf", "chunk_index": 1},
+        ),
+        DocumentChunk(
+            id="doc1.pdf#2",
+            content="chunk3",
+            metadata={"source_id": "doc1.pdf", "chunk_index": 2},
+        ),
+    ]

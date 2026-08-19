@@ -1,22 +1,11 @@
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.api.v1.models.document_chunk import DocumentChunkDTO
-from src.core.entities.rag import DocumentChunk
 
-
-class IngestRequest(BaseModel):
+class IngestDocumentRequest(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    documents: list[DocumentChunkDTO] = Field(
-        ..., min_length=1, description="List of document chunks to ingest into the vector store"
-    )
-
-    @classmethod
-    def to_document_chunks(cls, documents: list[DocumentChunkDTO]) -> list[DocumentChunk]:
-        return [
-            DocumentChunk(id=doc.id, content=doc.content, metadata={"source_id": doc.source_id})
-            for doc in documents
-        ]
+    source_id: str = Field(..., description="file name or uri")
+    content: str = Field(..., min_length=1, description="raw text")
 
 
 class IngestResponse(BaseModel):
