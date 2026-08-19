@@ -31,12 +31,17 @@ class Settings(BaseSettings):
         "\n\nContext:\n{context}"
     )
 
+    hallucination_warning_prompt: str = (
+        "\n\nWARNING: The previous answer was flagged for hallucination! "
+        "Please provide a more accurate response based on the context."
+    )
+
     hallucination_critic_prompt: str = (
-        "You are a hallucination critic for RAG Foundry."
-        " Your task is to evaluate the answer provided by the RAG system"
-        " based on the context given. If the answer is not supported by the context,"
-        " you should indicate that the answer is hallucinated."
-        "\n\nContext:\n{context}\n\nAnswer:\n{answer}"
+        "You are a strict fact-checker."
+        " Assess whether the answer is based EXCLUSIVELY on facts from the context.\n"
+        "Context:\n{context}\n\n"
+        "Answer:\n{answer}\n\n"
+        "Reply with only one word: YES (if the facts align) or NO (if there is fabrication)."
     )
 
 

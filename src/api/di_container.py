@@ -12,6 +12,7 @@ from src.core.services.rag_service import RAGService
 from src.infrastructure.cache.redis_repository import RedisCacheRepository
 from src.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
 from src.infrastructure.llm.langchain_adapter import LangChainLLMAdapter
+from src.infrastructure.llm.langgraph_adapter import LangGraphLLMAdapter
 from src.infrastructure.vector_store.qdrant_repository import QdrantRepository
 
 
@@ -41,8 +42,16 @@ def get_vector_repository() -> VectorStoreProtocol:
 
 
 @lru_cache
-def get_llm_client() -> LLMClientProtocol:
+def get_langchain_client() -> LLMClientProtocol:
     return LangChainLLMAdapter(
+        api_key=settings.openai_api_key,
+        model_name=settings.openai_model,
+    )
+
+
+@lru_cache
+def get_langgraph_client() -> LLMClientProtocol:
+    return LangGraphLLMAdapter(
         api_key=settings.openai_api_key,
         model_name=settings.openai_model,
     )
@@ -51,7 +60,7 @@ def get_llm_client() -> LLMClientProtocol:
 def get_rag_service(
     vector_store: Annotated[VectorStoreProtocol, Depends(get_vector_repository)],
     cache_store: Annotated[CacheStoreProtocol, Depends(get_cache_repository)],
-    llm_client: Annotated[LLMClientProtocol, Depends(get_llm_client)],
+    llm_client: Annotated[LLMClientProtocol, Depends(get_langgraph_client)],
 ) -> RAGService:
     return RAGService(
         vector_store=vector_store,
