@@ -23,6 +23,7 @@ dev = [
     "pre-commit>=4.6.2",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
+    "pytest-dotenv>=0.5.2",
     "ruff>=0.16.3",
 ]
 
@@ -55,6 +56,7 @@ exclude = ["tests/"]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 pythonpath = ["."]
+env_files = ".env.test"
 
 [tool.uv]
 package = false
