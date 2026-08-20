@@ -49,7 +49,7 @@ class LangGraphLLMAdapter(LLMClientProtocol):
     async def _evaluate_with_fallback(self, critic_prompt: str) -> bool:
         # Attempt structured output evaluation first
         try:
-            structured_llm = self._llm.with_structured_output(FactCheckEvaluation)
+            structured_llm = self._critic_llm.with_structured_output(FactCheckEvaluation)
             res = await structured_llm.ainvoke([HumanMessage(content=critic_prompt)])
             if isinstance(res, FactCheckEvaluation):
                 return res.is_faithful
@@ -73,7 +73,7 @@ class LangGraphLLMAdapter(LLMClientProtocol):
         )
 
         try:
-            response = await self._llm.ainvoke([HumanMessage(content=prompt)])
+            response = await self._critic_llm.ainvoke([HumanMessage(content=prompt)])
             raw_text = str(response.content).strip()
             match = re.search(r"\{.*?\}", raw_text, re.DOTALL)
             if match:
