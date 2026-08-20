@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Database, RefreshCw, CheckCircle } from 'lucide-react'
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL
+
 export function IngestView() {
     const [sourceId, setSourceId] = useState('')
     const [docContent, setDocContent] = useState('')
@@ -15,7 +17,7 @@ export function IngestView() {
         setIngestStatus(null)
 
         try {
-            const res = await fetch('http://localhost:8000/api/v1/rag/ingest', {
+            const res = await fetch(`${API_BASE}/rag/ingest`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
