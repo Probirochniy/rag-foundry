@@ -29,6 +29,95 @@ services:
       - PORT=80
     command: ["--model-id", "BAAI/bge-small-en-v1.5", "--port", "80"]
 
+  minio:
+    image: minio/minio:latest
+    container_name: rag_foundry_minio
+    profiles: ["langfuse"]
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
+    command: server /data --console-address ":9001"
+    ports:
+      - "9090:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
+  minio-create-bucket:
+    image: minio/mc:latest
+    container_name: rag_foundry_minio_init
+    profiles: ["langfuse"]
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin}; do
+        echo 'Awaiting minio...'
+        sleep 1
+      done;
+      /usr/bin/mc mb myminio/${LANGFUSE_S3_BUCKET:-langfuse} || true;
+      echo 'Bucket created!';
+      exit 0;
+      "
+
+  langfuse-db:
+    image: postgres:16-alpine
+    container_name: rag_foundry_langfuse_db
+    profiles: ["langfuse"]
+    environment:
+      - POSTGRES_USER=${LANGFUSE_DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${LANGFUSE_DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${LANGFUSE_DB_NAME:-langfuse}
+    ports:
+      - "5432:5432"
+    volumes:
+      - langfuse_db_data:/var/lib/postgresql/data
+
+  langfuse-clickhouse:
+    image: clickhouse/clickhouse-server:24.3-alpine
+    container_name: rag_foundry_langfuse_clickhouse
+    profiles: ["langfuse"]
+    environment:
+      - CLICKHOUSE_DB=${LANGFUSE_CLICKHOUSE_DB:-default}
+      - CLICKHOUSE_USER=${LANGFUSE_CLICKHOUSE_USER:-clickhouse}
+      - CLICKHOUSE_PASSWORD=${LANGFUSE_CLICKHOUSE_PASSWORD:-clickhouse}
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - langfuse_clickhouse_data:/var/lib/clickhouse
+
+  langfuse-server:
+    image: langfuse/langfuse:3
+    container_name: rag_foundry_langfuse
+    profiles: ["langfuse"]
+    depends_on:
+      - langfuse-db
+      - langfuse-clickhouse
+      - minio-create-bucket
+    ports:
+      - "3001:3000"
+    environment:
+      - DATABASE_URL=postgresql://${LANGFUSE_DB_USER:-postgres}:${LANGFUSE_DB_PASSWORD:-postgres}@langfuse-db:5432/${LANGFUSE_DB_NAME:-langfuse}
+      - CLICKHOUSE_URL=http://langfuse-clickhouse:8123
+      - CLICKHOUSE_MIGRATION_URL=clickhouse://langfuse-clickhouse:9000
+      - CLICKHOUSE_USER=${LANGFUSE_CLICKHOUSE_USER:-clickhouse}
+      - CLICKHOUSE_PASSWORD=${LANGFUSE_CLICKHOUSE_PASSWORD:-clickhouse}
+      - CLICKHOUSE_DB=${LANGFUSE_CLICKHOUSE_DB:-default}
+      - CLICKHOUSE_CLUSTER_ENABLED=false
+      - NEXTAUTH_SECRET=${LANGFUSE_NEXTAUTH_SECRET}
+      - SALT=${LANGFUSE_SALT}
+      - ENCRYPTION_KEY=${LANGFUSE_ENCRYPTION_KEY}
+      - NEXTAUTH_URL=${LANGFUSE_NEXTAUTH_URL:-http://localhost:3001}
+      - TELEMETRY_ENABLED=${LANGFUSE_TELEMETRY_ENABLED:-false}
+      - LANGFUSE_S3_EVENT_UPLOAD_BUCKET=${LANGFUSE_S3_BUCKET:-langfuse}
+      - LANGFUSE_S3_EVENT_UPLOAD_REGION=auto
+      - LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID=${MINIO_ROOT_USER:-minioadmin}
+      - LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
+      - LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT=http://minio:9000
+      - LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE=true
+      - LANGFUSE_S3_EVENT_UPLOAD_PREFIX=events/
+
   backend:
     build:
       context: .
@@ -42,6 +131,8 @@ services:
       - redis
       - qdrant
       - tei
+      - langfuse-db
+      - langfuse-server
     volumes:
       - ./src:/app/src
     command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
@@ -55,11 +146,11 @@ services:
     ports:
       - "3000:80"
     depends_on:
-      - qdrant
-      - redis
-      - tei
       - backend
 
 volumes:
   qdrant_data:
   redis_data:
+  langfuse_db_data:
+  langfuse_clickhouse_data:
+  minio_data:
