@@ -36,8 +36,9 @@ class GraphState(TypedDict):
 class LangGraphLLMAdapter(LLMClientProtocol):
     """Enhanced adapter with a graph-based approach for hallucination mitigation."""
 
-    def __init__(self, llm: BaseChatModel) -> None:
+    def __init__(self, llm: BaseChatModel, critic_llm: BaseChatModel) -> None:
         self._llm = llm
+        self._critic_llm = critic_llm
         self._graph = self._build_graph()
 
     def _format_context(self, context: list[SearchResult]) -> str:
@@ -86,7 +87,7 @@ class LangGraphLLMAdapter(LLMClientProtocol):
         except Exception as e:
             logger.warning(f"Critic evaluation failed with exception: {e}")
 
-        # fail-open. seethe cry but avoid blocking the pipeline
+        # fail-open. seethe cry but cope.
         return True
 
     def _build_graph(self) -> CompiledStateGraph[GraphState, None, GraphState, GraphState]:
