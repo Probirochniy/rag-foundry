@@ -6,6 +6,8 @@ from typing import Any, Literal, TypedDict
 
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.runnables import RunnableConfig
+from langfuse.langchain import CallbackHandler
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from pydantic import BaseModel, Field
@@ -40,6 +42,11 @@ class LangGraphLLMAdapter(LLMClientProtocol):
         self._llm = llm
         self._critic_llm = critic_llm
         self._graph = self._build_graph()
+
+    def _get_callbacks(self) -> list[Any]:
+        if not settings.is_langfuse_enabled:
+            return []
+        return [CallbackHandler()]
 
     def _format_context(self, context: list[SearchResult]) -> str:
         if not context:
@@ -150,7 +157,10 @@ class LangGraphLLMAdapter(LLMClientProtocol):
             "retry_count": 0,
         }
 
-        final_state = await self._graph.ainvoke(initial_state)
+        callbacks = self._get_callbacks()
+        config: RunnableConfig | None = {"callbacks": callbacks} if callbacks else None
+
+        final_state = await self._graph.ainvoke(initial_state, config=config)
 
         return GeneratedAnswer(
             answer=str(final_state["answer"]),
@@ -174,7 +184,10 @@ class LangGraphLLMAdapter(LLMClientProtocol):
         seen_validate = False
         is_retrying = False
 
-        async for event in self._graph.astream_events(initial_state, version="v2"):
+        callbacks = self._get_callbacks()
+        config: RunnableConfig | None = {"callbacks": callbacks} if callbacks else None
+
+        async for event in self._graph.astream_events(initial_state, version="v2", config=config):
             kind = event["event"]
             node_name = event.get("metadata", {}).get("langgraph_node")
 

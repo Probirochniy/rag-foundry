@@ -41,6 +41,14 @@ class Settings(BaseSettings):
 
     llm_provider: str = "openai"
 
+    # Docker Profiles & Feature Toggles
+    compose_profiles: str = ""
+
+    # Langfuse
+    langfuse_public_key: str = ""
+    langfuse_secret_key: str = ""
+    langfuse_host: str = "http://localhost:3001"
+
     # Hallucination detection
     max_hallucination_retries: int = 1
 
@@ -64,6 +72,10 @@ class Settings(BaseSettings):
     )
 
     hallucination_marker: str = "[RESET]"
+
+    @property
+    def is_langfuse_enabled(self) -> bool:
+        return "langfuse" in self.compose_profiles.lower() and bool(self.langfuse_public_key)
 
 
 settings = Settings()
