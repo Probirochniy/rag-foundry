@@ -8,7 +8,7 @@ from src.api.router import root_router
 from src.core.config import settings
 from src.infrastructure.cache.redis_repository import RedisCacheRepository
 from src.infrastructure.embeddings.tei_embed_adapter import TEIEmbedAdapter
-from src.infrastructure.llm.factory import create_llm
+from src.infrastructure.llm.factory import create_critic_llm, create_llm
 from src.infrastructure.llm.langgraph_adapter import LangGraphLLMAdapter
 from src.infrastructure.splitter.sliding_window import SlidingWindowSplitter
 from src.infrastructure.vector_store.qdrant_repository import QdrantRepository
@@ -28,7 +28,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await vector_store.ensure_collection_exists()
 
     base_llm = create_llm()
-    llm_adapter = LangGraphLLMAdapter(llm=base_llm)
+    critic_llm = create_critic_llm()
+    llm_adapter = LangGraphLLMAdapter(llm=base_llm, critic_llm=critic_llm)
 
     splitter = SlidingWindowSplitter(
         chunk_size=settings.chunk_size,

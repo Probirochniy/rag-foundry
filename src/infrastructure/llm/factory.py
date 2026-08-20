@@ -26,3 +26,26 @@ def create_llm() -> BaseChatModel:
         )
 
     raise ValueError(f"Unknown LLM provider: {provider}")
+
+
+def create_critic_llm() -> BaseChatModel:
+    provider = settings.llm_provider.lower()
+
+    if provider == "openai":
+        return ChatOpenAI(
+            api_key=SecretStr(settings.openai_api_key),
+            model=settings.openai_model,
+            temperature=settings.openai_temperature,
+            streaming=False,
+        )
+
+    elif provider == "vllm":
+        return ChatOpenAI(
+            base_url=settings.vllm_base_url,
+            api_key=None,
+            model=settings.vllm_model,
+            temperature=settings.vllm_temperature,
+            streaming=False,
+        )
+
+    raise ValueError(f"Unknown LLM provider: {provider}")

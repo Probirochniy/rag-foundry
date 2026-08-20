@@ -45,7 +45,7 @@ export function ChatView({
                 {msg.wasReset && (
                   <div className="flex items-center gap-1 text-xs text-amber-400 mb-2 font-mono bg-amber-950/40 px-2 py-1 rounded border border-amber-800/50">
                     <AlertTriangle size={12} />
-                    <span>Галлюцинация поймана и исправлена</span>
+                    <span>Catched hallucination! Retried.</span>
                   </div>
                 )}
                 <p className="whitespace-pre-wrap">{msg.content}</p>
