@@ -87,6 +87,38 @@ services:
     volumes:
       - langfuse_clickhouse_data:/var/lib/clickhouse
 
+  langfuse-worker:
+    image: langfuse/langfuse-worker:3
+    container_name: rag_foundry_langfuse_worker
+    profiles: ["langfuse"]
+    depends_on:
+      - langfuse-db
+      - langfuse-clickhouse
+      - minio-create-bucket
+      - redis
+    environment:
+      - DATABASE_URL=postgresql://${LANGFUSE_DB_USER:-postgres}:${LANGFUSE_DB_PASSWORD:-postgres}@langfuse-db:5432/${LANGFUSE_DB_NAME:-langfuse}
+      - CLICKHOUSE_URL=http://langfuse-clickhouse:8123
+      - CLICKHOUSE_MIGRATION_URL=clickhouse://langfuse-clickhouse:9000
+      - CLICKHOUSE_USER=${LANGFUSE_CLICKHOUSE_USER:-clickhouse}
+      - CLICKHOUSE_PASSWORD=${LANGFUSE_CLICKHOUSE_PASSWORD:-clickhouse}
+      - CLICKHOUSE_DB=${LANGFUSE_CLICKHOUSE_DB:-default}
+      - CLICKHOUSE_CLUSTER_ENABLED=false
+      - REDIS_CONNECTION_STRING=redis://redis:6379
+      - REDIS_SOCKET_TIMEOUT_MS=0
+      - NEXTAUTH_SECRET=${LANGFUSE_NEXTAUTH_SECRET}
+      - SALT=${LANGFUSE_SALT}
+      - ENCRYPTION_KEY=${LANGFUSE_ENCRYPTION_KEY}
+      - NEXTAUTH_URL=${LANGFUSE_NEXTAUTH_URL:-http://localhost:3001}
+      - TELEMETRY_ENABLED=${LANGFUSE_TELEMETRY_ENABLED:-false}
+      - LANGFUSE_S3_EVENT_UPLOAD_BUCKET=${LANGFUSE_S3_BUCKET:-langfuse}
+      - LANGFUSE_S3_EVENT_UPLOAD_REGION=auto
+      - LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID=${MINIO_ROOT_USER:-minioadmin}
+      - LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
+      - LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT=http://minio:9000
+      - LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE=true
+      - LANGFUSE_S3_EVENT_UPLOAD_PREFIX=events/
+
   langfuse-server:
     image: langfuse/langfuse:3
     container_name: rag_foundry_langfuse
@@ -107,6 +139,7 @@ services:
       - CLICKHOUSE_DB=${LANGFUSE_CLICKHOUSE_DB:-default}
       - CLICKHOUSE_CLUSTER_ENABLED=false
       - REDIS_CONNECTION_STRING=redis://redis:6379
+      - REDIS_SOCKET_TIMEOUT_MS=0
       - NEXTAUTH_SECRET=${LANGFUSE_NEXTAUTH_SECRET}
       - SALT=${LANGFUSE_SALT}
       - ENCRYPTION_KEY=${LANGFUSE_ENCRYPTION_KEY}
