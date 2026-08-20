@@ -20,6 +20,8 @@ spec:
           ports:
             - containerPort: 8000
           envFrom:
+            - configMapRef:
+                name: rag-config
             - secretRef:
                 name: rag-secrets
           livenessProbe:

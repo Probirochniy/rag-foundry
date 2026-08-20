@@ -5,7 +5,7 @@ resources:
   - 01-infra.yaml
   - 02-app.yaml
 
-secretGenerator:
-  - name: rag-secrets
+configMapGenerator:
+  - name: rag-config
     envs:
-      - .env
+      - config.env
