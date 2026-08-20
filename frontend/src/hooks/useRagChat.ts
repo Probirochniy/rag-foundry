@@ -8,6 +8,7 @@ export function useRagChat() {
     const [messages, setMessages] = useState<Message[]>([])
     const [input, setInput] = useState('')
     const [topK, setTopK] = useState(3)
+    const [isStreamingEnabled, setIsStreamingEnabled] = useState(true)
     const [isLoading, setIsLoading] = useState(false)
     const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -39,13 +40,11 @@ export function useRagChat() {
                 id: assistantMsgId,
                 role: 'assistant',
                 content: '',
-                isStreaming: true,
+                isStreaming: isStreamingEnabled,
             },
         ])
 
         setIsLoading(true)
-
-        const ctrl = new AbortController()
 
         const updateAssistant = (update: Partial<Message>) => {
             setMessages((prev) =>
@@ -56,6 +55,42 @@ export function useRagChat() {
                 )
             )
         }
+
+        if (!isStreamingEnabled) {
+            try {
+                const res = await fetch(`${API_BASE}/rag/query`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: userText,
+                        top_k: topK,
+                    }),
+                })
+
+                if (!res.ok) {
+                    throw new Error(`HTTP error ${res.status}`)
+                }
+
+                const data = await res.json()
+                updateAssistant({
+                    content: data.answer,
+                    isStreaming: false,
+                })
+            } catch (err) {
+                console.error('RAG sync query failed:', err)
+                updateAssistant({
+                    content: '❌ Server does not want to talk to you. It does be like that sometimes...',
+                    isStreaming: false,
+                })
+            } finally {
+                setIsLoading(false)
+            }
+            return
+        }
+
+        const ctrl = new AbortController()
 
         try {
             await fetchEventSource(`${API_BASE}/rag/stream`, {
@@ -85,11 +120,11 @@ export function useRagChat() {
                             prev.map((msg) =>
                                 msg.id === assistantMsgId
                                     ? {
-                                          ...msg,
-                                          content:
-                                              msg.content +
-                                              (parsed.content || ''),
-                                      }
+                                        ...msg,
+                                        content:
+                                            msg.content +
+                                            (parsed.content || ''),
+                                    }
                                     : msg
                             )
                         )
@@ -113,17 +148,14 @@ export function useRagChat() {
                 isStreaming: false,
             })
         } catch (err) {
-            console.error('RAG request failed:', err)
-
+            console.error('RAG stream failed:', err)
             updateAssistant({
-                content:
-                    '❌ Server does not want to talk to you. It does be like that sometimes...',
+                content: '❌ Server does not want to stream. Well...',
                 isStreaming: false,
             })
         } finally {
             ctrl.abort()
             setIsLoading(false)
-
             setMessages((prev) =>
                 prev.map((msg) =>
                     msg.id === assistantMsgId
@@ -140,6 +172,8 @@ export function useRagChat() {
         setInput,
         topK,
         setTopK,
+        isStreamingEnabled,
+        setIsStreamingEnabled,
         isLoading,
         messagesEndRef,
         sendMessage,
