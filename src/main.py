@@ -10,7 +10,7 @@ from src.infrastructure.cache.redis_repository import RedisCacheRepository
 from src.infrastructure.embeddings.tei_embed_adapter import TEIEmbedAdapter
 from src.infrastructure.llm.factory import create_critic_llm, create_llm
 from src.infrastructure.llm.langgraph_adapter import LangGraphLLMAdapter
-from src.infrastructure.splitter.sliding_window import SlidingWindowSplitter
+from src.infrastructure.splitter.langchain_splitter import LangChainSplitterAdapter
 from src.infrastructure.vector_store.qdrant_repository import QdrantRepository
 
 
@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     critic_llm = create_critic_llm()
     llm_adapter = LangGraphLLMAdapter(llm=base_llm, critic_llm=critic_llm)
 
-    splitter = SlidingWindowSplitter(
+    splitter = LangChainSplitterAdapter(
         chunk_size=settings.chunk_size,
         chunk_overlap=settings.chunk_overlap,
     )
