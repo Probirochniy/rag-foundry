@@ -166,8 +166,6 @@ services:
       - redis
       - qdrant
       - tei
-      - langfuse-db
-      - langfuse-server
     volumes:
       - ./src:/app/src
     command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
