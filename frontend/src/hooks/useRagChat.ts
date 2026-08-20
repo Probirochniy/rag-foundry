@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { fetchEventSource } from '@microsoft/fetch-event-source'
 import type { Message } from '../types'
 
-const API_BASE = import.meta.env.BACKEND_URL
+const API_BASE = import.meta.env.VITE_API_BASE_URL
 
 export function useRagChat() {
     const [messages, setMessages] = useState<Message[]>([])

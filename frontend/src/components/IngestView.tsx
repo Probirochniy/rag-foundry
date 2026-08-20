@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Database, RefreshCw, CheckCircle } from 'lucide-react'
 
-const API_BASE = import.meta.env.BACKEND_URL
+const API_BASE = import.meta.env.VITE_API_BASE_URL
 
 export function IngestView() {
     const [sourceId, setSourceId] = useState('')
