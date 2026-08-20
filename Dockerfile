@@ -3,12 +3,11 @@ FROM python:3.12-slim AS builder
 WORKDIR /app
 
 RUN pip install --no-cache-dir uv
-
 COPY pyproject.toml ./
+RUN uv pip install --system --no-cache .
+
 COPY src/ ./src/
 COPY README.md ./
-
-RUN uv pip install --system --no-cache .
 
 FROM python:3.12-slim AS runtime
 
@@ -26,8 +25,5 @@ RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
 
 EXPOSE 8000
-
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8000/api/v1/system/health || exit 1
 
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
