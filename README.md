@@ -72,17 +72,18 @@ Spin up the backend, frontend, Qdrant, Redis, and TEI:
 docker compose -f docker-compose.dev.yml up --build -d
 ```
 
-Frontend will be up at `http://localhost:3000`
-Backend Swagger docs at `http://localhost:8000/docs`
+Frontend will be up at `http://localhost:3000`.
 
-### That's it, you are awesome.
+Backend Swagger docs at `http://localhost:8000/docs`.
 
->💡 Want full Langfuse tracing?
+**That's it, you are awesome.**
+
+>💡 But I want full Langfuse tracing!!
 
 God bless.
 Uncomment `COMPOSE_PROFILES=langfuse` in your .env and enjoy.
 
-Be ready that it starts postgres, s3, clickhouse, langfuse server and worker. ~~I really should have stayed on v2...~~
+Be ready that it starts postgres, s3, clickhouse, langfuse server and worker, which is clearly an overkill for this app. ~~I really should have stayed on v2...~~
 
 
 ## API Endpoints
