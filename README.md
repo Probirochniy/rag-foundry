@@ -93,4 +93,4 @@ Be ready that it starts postgres, s3, clickhouse, langfuse server and worker. ~~
 
 ## License
 
-MIT. Do whatever you want with it idcgit.
+MIT. Do whatever you want with it idc.
