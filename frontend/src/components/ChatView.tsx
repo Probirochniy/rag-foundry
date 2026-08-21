@@ -64,7 +64,7 @@ export function ChatView({
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Спроси что-нибудь у RAG..."
+          placeholder="Ask your important questions here..."
           disabled={isLoading}
           className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition"
         />

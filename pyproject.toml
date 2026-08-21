@@ -3,6 +3,7 @@ name = "rag-foundry"
 version = "0.1.0"
 description = "Test RAG app"
 readme = "README.md"
+license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.141.1",
