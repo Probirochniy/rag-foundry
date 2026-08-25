@@ -93,7 +93,7 @@ Be ready that it starts postgres, s3, clickhouse, langfuse server and worker, wh
 - `GET /healthz` & `GET /readyz` - Kubernetes liveness and readiness probes checking the backing services.
 
 ## To-do
-1. [ ] **Hybrid Search:** FastEmbed BM25 + TEI Cosine.
+1. [x] **Hybrid Search:** FastEmbed BM25 + TEI Cosine.
 2. [ ] **Reranker**
 3. [ ] **LangGraph Interrupt**
 4. [ ] **Evals**

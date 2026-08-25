@@ -7,8 +7,7 @@ from collections.abc import Sequence
 from qdrant_client import AsyncQdrantClient, models
 
 from src.core.config import settings
-from src.core.entities.rag import DocumentChunk, SearchResult
-from src.core.protocols.embeddings import EmbeddingsProtocol
+from src.core.entities.rag import DocumentChunk, SearchResult, SparseVectorData
 from src.core.protocols.vector_store import VectorStoreProtocol
 
 logger = logging.getLogger(__name__)
@@ -19,13 +18,11 @@ class QdrantRepository(VectorStoreProtocol):
         self,
         url: str,
         collection_name: str,
-        embeddings: EmbeddingsProtocol,
         vector_size: int = 384,
     ) -> None:
         self._url = url
         self._collection_name = collection_name
         self._vector_size = vector_size
-        self._embeddings = embeddings
         self._client = AsyncQdrantClient(url=self._url)
         self._collection_ensured = False
         self._lock = asyncio.Lock()
@@ -44,12 +41,19 @@ class QdrantRepository(VectorStoreProtocol):
             if self._collection_name not in existing:
                 await self._client.create_collection(
                     collection_name=self._collection_name,
-                    vectors_config=models.VectorParams(
-                        size=self._vector_size,
-                        distance=models.Distance.COSINE,
-                    ),
+                    vectors_config={
+                        settings.dense_vector_name: models.VectorParams(
+                            size=self._vector_size,
+                            distance=models.Distance.COSINE,
+                        )
+                    },
+                    sparse_vectors_config={
+                        settings.sparse_vector_name: models.SparseVectorParams(
+                            index=models.SparseIndexParams(on_disk=False)
+                        )
+                    },
                 )
-                logger.info(f"Created Qdrant collection: {self._collection_name}")
+                logger.info(f"Created hybrid Qdrant collection: {self._collection_name}")
 
             self._collection_ensured = True
 
@@ -61,11 +65,8 @@ class QdrantRepository(VectorStoreProtocol):
         batch_size = settings.qdrant_upsert_batch_size
 
         for chunk_batch in itertools.batched(chunks, batch_size):
-            texts_to_embed = [c.content for c in chunk_batch]
-            vectors = await self._embeddings.embed_documents(texts_to_embed)
-
             points: list[models.PointStruct] = []
-            for chunk, vector in zip(chunk_batch, vectors, strict=True):
+            for chunk in chunk_batch:
                 point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, chunk.id))
                 payload = {
                     "chunk_id": chunk.id,
@@ -73,7 +74,19 @@ class QdrantRepository(VectorStoreProtocol):
                     "source_id": chunk.metadata.get("source_id", "unknown"),
                     "metadata": chunk.metadata,
                 }
-                points.append(models.PointStruct(id=point_id, vector=vector, payload=payload))
+                points.append(
+                    models.PointStruct(
+                        id=point_id,
+                        vector={
+                            settings.dense_vector_name: chunk.dense_embedding,
+                            settings.sparse_vector_name: models.SparseVector(
+                                indices=chunk.sparse_embedding.indices,
+                                values=chunk.sparse_embedding.values,
+                            ),
+                        },
+                        payload=payload,
+                    )
+                )
 
             await self._client.upsert(
                 collection_name=self._collection_name,
@@ -81,14 +94,32 @@ class QdrantRepository(VectorStoreProtocol):
                 wait=False,
             )
 
-    async def search(self, query: str, top_k: int = 3) -> list[SearchResult]:
+    async def search(
+        self,
+        dense_vector: list[float],
+        sparse_vector: SparseVectorData,
+        top_k: int = 3,
+    ) -> list[SearchResult]:
         await self.ensure_collection_exists()
-
-        query_vector = await self._embeddings.embed_query(query)
 
         response = await self._client.query_points(
             collection_name=self._collection_name,
-            query=query_vector,
+            prefetch=[
+                models.Prefetch(
+                    query=dense_vector,
+                    using=settings.dense_vector_name,
+                    limit=top_k * 2,
+                ),
+                models.Prefetch(
+                    query=models.SparseVector(
+                        indices=sparse_vector.indices,
+                        values=sparse_vector.values,
+                    ),
+                    using=settings.sparse_vector_name,
+                    limit=top_k * 2,
+                ),
+            ],
+            query=models.FusionQuery(fusion=models.Fusion.RRF),
             limit=top_k,
             with_payload=True,
         )

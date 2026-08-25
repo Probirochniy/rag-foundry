@@ -4,10 +4,10 @@ from typing import cast
 
 from fastembed import TextEmbedding
 
-from src.core.protocols.embeddings import EmbeddingsProtocol
+from src.core.protocols.embeddings import DenseEmbeddingsProtocol
 
 
-class FastEmbedAdapter(EmbeddingsProtocol):
+class FastEmbedDenseAdapter(DenseEmbeddingsProtocol):
     def __init__(self, model_name: str = "BAAI/bge-small-en-v1.5") -> None:
         self._model = TextEmbedding(model_name=model_name)
 

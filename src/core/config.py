@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     chunk_size: int = 500
     chunk_overlap: int = 50
 
+    dense_vector_name: str = "dense"
+    sparse_vector_name: str = "sparse"
+
     # OpenAI
     openai_api_key: str = ""
     openai_model: str = "gpt-5.6-sol"

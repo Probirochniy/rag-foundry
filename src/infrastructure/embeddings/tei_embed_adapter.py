@@ -4,12 +4,12 @@ from collections.abc import Sequence
 
 import httpx
 
-from src.core.protocols.embeddings import EmbeddingsProtocol
+from src.core.protocols.embeddings import DenseEmbeddingsProtocol
 
 logger = logging.getLogger(__name__)
 
 
-class TEIEmbedAdapter(EmbeddingsProtocol):
+class TEIEmbedDenseAdapter(DenseEmbeddingsProtocol):
     def __init__(
         self,
         base_url: str,
