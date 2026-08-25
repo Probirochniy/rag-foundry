@@ -12,9 +12,9 @@ class SparseVectorData:
 class DocumentChunk:
     id: str
     content: str
+    dense_embedding: list[float]
+    sparse_embedding: SparseVectorData
     metadata: dict[str, Any] = field(default_factory=dict)
-    dense_embedding: list[float] | None = None
-    sparse_embedding: SparseVectorData | None = None
 
 
 @dataclass(frozen=True, slots=True)

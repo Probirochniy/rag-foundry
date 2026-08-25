@@ -67,9 +67,6 @@ class QdrantRepository(VectorStoreProtocol):
         for chunk_batch in itertools.batched(chunks, batch_size):
             points: list[models.PointStruct] = []
             for chunk in chunk_batch:
-                if not chunk.dense_embedding or not chunk.sparse_embedding:
-                    raise ValueError(f"chunk {chunk.id} is missing embeddings you dumb fuck")
-
                 point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, chunk.id))
                 payload = {
                     "chunk_id": chunk.id,
