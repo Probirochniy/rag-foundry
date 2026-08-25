@@ -92,6 +92,12 @@ Be ready that it starts postgres, s3, clickhouse, langfuse server and worker, wh
 - `POST /api/v1/rag/stream` - SSE streaming endpoint.
 - `GET /healthz` & `GET /readyz` - Kubernetes liveness and readiness probes checking the backing services.
 
-## License
+## To-do
+1. [ ] **Hybrid Search:** FastEmbed BM25 + TEI Cosine.
+2. [ ] **Reranker**
+3. [ ] **LangGraph Interrupt**
+4. [ ] **Evals**
+5. [ ] **Semantic Cache**
 
+## License
 MIT. Do whatever you want with it idc.
