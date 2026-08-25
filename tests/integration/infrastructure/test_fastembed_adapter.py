@@ -1,11 +1,11 @@
 import pytest
 
-from src.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
+from src.infrastructure.embeddings.fastembed_adapter import FastEmbedDenseAdapter
 
 
 @pytest.mark.asyncio
 async def test_fastembed_adapter_embeds_queries_and_documents() -> None:
-    adapter = FastEmbedAdapter()
+    adapter = FastEmbedDenseAdapter()
 
     query_embedding = await adapter.embed_query("What is retrieval augmented generation?")
     document_embeddings = await adapter.embed_documents(

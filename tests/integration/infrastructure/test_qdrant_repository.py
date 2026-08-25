@@ -2,14 +2,14 @@ import pytest
 
 from src.core.config import settings
 from src.core.entities.rag import DocumentChunk
-from src.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
+from src.infrastructure.embeddings.fastembed_adapter import FastEmbedDenseAdapter
 from src.infrastructure.embeddings.sparse_embed_adapter import FastEmbedSparseAdapter
 from src.infrastructure.vector_store.qdrant_repository import QdrantRepository
 
 
 @pytest.mark.asyncio
 async def test_qdrant_hybrid_repository() -> None:
-    embeddings = FastEmbedAdapter()
+    embeddings = FastEmbedDenseAdapter()
     sparse_embeddings = FastEmbedSparseAdapter()
 
     repo = QdrantRepository(
