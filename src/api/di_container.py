@@ -5,15 +5,19 @@ from fastapi import Depends, Request
 
 from src.core.config import settings
 from src.core.protocols.cache import CacheStoreProtocol
-from src.core.protocols.embeddings import EmbeddingsProtocol
+from src.core.protocols.embeddings import DenseEmbeddingsProtocol, SparseEmbeddingsProtocol
 from src.core.protocols.llm import LLMClientProtocol
 from src.core.protocols.splitter import TextSplitterProtocol
 from src.core.protocols.vector_store import VectorStoreProtocol
 from src.core.services.rag_service import RAGService
 
 
-def get_embeddings_adapter(request: Request) -> EmbeddingsProtocol:
-    return typing.cast(EmbeddingsProtocol, request.app.state.embeddings_repo)
+def get_dense_embeddings_adapter(request: Request) -> DenseEmbeddingsProtocol:
+    return typing.cast(DenseEmbeddingsProtocol, request.app.state.embeddings_repo)
+
+
+def get_sparse_embeddings_adapter(request: Request) -> SparseEmbeddingsProtocol:
+    return typing.cast(SparseEmbeddingsProtocol, request.app.state.sparse_embeddings_repo)
 
 
 def get_cache_repository(request: Request) -> CacheStoreProtocol:
@@ -37,11 +41,15 @@ def get_rag_service(
     cache_store: Annotated[CacheStoreProtocol, Depends(get_cache_repository)],
     llm_client: Annotated[LLMClientProtocol, Depends(get_llm_client)],
     text_splitter: Annotated[TextSplitterProtocol, Depends(get_text_splitter)],
+    dense_embeddings: Annotated[DenseEmbeddingsProtocol, Depends(get_dense_embeddings_adapter)],
+    sparse_embeddings: Annotated[SparseEmbeddingsProtocol, Depends(get_sparse_embeddings_adapter)],
 ) -> RAGService:
     return RAGService(
         vector_store=vector_store,
         cache_store=cache_store,
         llm_client=llm_client,
         text_splitter=text_splitter,
+        dense_embeddings=dense_embeddings,
+        sparse_embeddings=sparse_embeddings,
         cache_ttl_seconds=settings.redis_cache_ttl_seconds,
     )

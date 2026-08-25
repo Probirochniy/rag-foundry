@@ -3,16 +3,20 @@ import pytest
 from src.core.config import settings
 from src.core.entities.rag import DocumentChunk
 from src.infrastructure.embeddings.fastembed_adapter import FastEmbedAdapter
+from src.infrastructure.embeddings.sparse_embed_adapter import FastEmbedSparseAdapter
 from src.infrastructure.vector_store.qdrant_repository import QdrantRepository
 
 
 @pytest.mark.asyncio
-async def test_qdrant_repository() -> None:
+async def test_qdrant_hybrid_repository() -> None:
     embeddings = FastEmbedAdapter()
+    sparse_embeddings = FastEmbedSparseAdapter()
+
     repo = QdrantRepository(
         url=settings.qdrant_url,
-        collection_name="test_semantic_collection",
+        collection_name="test_hybrid_collection",
         embeddings=embeddings,
+        sparse_embeddings=sparse_embeddings,
         vector_size=384,
     )
 
@@ -21,28 +25,35 @@ async def test_qdrant_repository() -> None:
 
     chunks = [
         DocumentChunk(
-            id="doc-k8s",
-            content="Kubernetes (also known as K8s) is an open-source system."
-            "It automates how you run, update, and scale computer programs"
-            "across many servers.",
+            id="doc-toaster",
+            content="Error code ERR-8492 occurs when the toaster overheating protection activates."
+            "Please reset the thermal fuse.",
+            metadata={"source_id": "toaster_manual.md"},
+        ),
+        DocumentChunk(
+            id="doc-devops",
+            content="Kubernetes automates deployment, scaling, and "
+            "management of containerized apps.",
             metadata={"source_id": "k8s.md"},
         ),
         DocumentChunk(
             id="doc-food",
-            content="god i love pizza.",
+            content="I can eat pepperoni pizza for breakfast lunch and dinner every single day.",
             metadata={"source_id": "pizza.md"},
         ),
     ]
 
     await repo.upsert(chunks)
 
-    # Same meaning, different wording
-    results = await repo.search(
-        query="How to manage docker containers in production clusters?", top_k=1
-    )
+    # Exact keyword search test (Sparse)
+    sparse_results = await repo.search(query="my machine gives ERR-8492 what to do", top_k=1)
+    assert len(sparse_results) == 1
+    assert sparse_results[0].source_id == "toaster_manual.md"
+    assert "ERR-8492" in sparse_results[0].content
 
-    assert len(results) == 1
-    assert results[0].source_id == "k8s.md"
-    assert results[0].score > 0.5
+    # Semanting meaning search test (Dense)
+    dense_results = await repo.search(query="how to orchestrate docker nodes in cluster", top_k=1)
+    assert len(dense_results) == 1
+    assert dense_results[0].source_id == "k8s.md"
 
     await repo.close()

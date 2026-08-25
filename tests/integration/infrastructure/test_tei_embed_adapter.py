@@ -3,7 +3,7 @@ import math
 import pytest
 
 from src.core.config import settings
-from src.infrastructure.embeddings.tei_embed_adapter import TEIEmbedAdapter
+from src.infrastructure.embeddings.tei_embed_adapter import TEIEmbedDenseAdapter
 
 
 def cosine_similarity(vec_a: list[float], vec_b: list[float]) -> float:
@@ -15,7 +15,7 @@ def cosine_similarity(vec_a: list[float], vec_b: list[float]) -> float:
 
 @pytest.mark.asyncio
 async def test_tei_adapter_integration() -> None:
-    adapter = TEIEmbedAdapter(
+    adapter = TEIEmbedDenseAdapter(
         base_url=settings.tei_url,
         batch_size=2,
     )
